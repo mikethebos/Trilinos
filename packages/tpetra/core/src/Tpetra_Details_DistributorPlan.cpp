@@ -93,6 +93,7 @@ DistributorHowInitializedEnumToString (EDistributorHowInitialized how)
   }
 }
 
+// TODO null out the mpi advance communicator
 DistributorPlan::DistributorPlan(Teuchos::RCP<const Teuchos::Comm<int>> comm)
   : comm_(comm),
 #if defined(HAVE_TPETRA_CORE_MPI_ADVANCE)
@@ -108,6 +109,7 @@ DistributorPlan::DistributorPlan(Teuchos::RCP<const Teuchos::Comm<int>> comm)
     totalReceiveLength_(0)
 { }
 
+// TODO: add mpi advance comm
 DistributorPlan::DistributorPlan(const DistributorPlan& otherPlan)
   : comm_(otherPlan.comm_),
 #if defined(HAVE_TPETRA_CORE_MPI_ADVANCE)
@@ -431,6 +433,7 @@ void DistributorPlan::createFromRecvs(const Teuchos::ArrayView<const int>& remot
 
   *this = *getReversePlan();
 
+
 #if defined(HAVE_TPETRA_CORE_MPI_ADVANCE)
   initializeMpiAvance();
 #endif
@@ -447,6 +450,10 @@ void DistributorPlan::createFromSendsAndRecvs(const Teuchos::ArrayView<const int
   // it will generate a wrong answer, because those lists have a unique entry
   // for each processor id. A version of this with lengthsTo and lengthsFrom
   // should be made.
+
+  #if defined(HAVE_TPETRA_CORE_MPI_ADVANCE)
+  initializeMpiAvance();
+  #endif
 
   howInitialized_ = Tpetra::Details::DISTRIBUTOR_INITIALIZED_BY_CREATE_FROM_SENDS_N_RECVS;
 
@@ -676,6 +683,7 @@ void DistributorPlan::createReversePlan() const
   // is there a smarter way to do this
   reversePlan_->initializeMpiAvance();
 #endif
+
 }
 
 void DistributorPlan::computeReceives()
@@ -971,6 +979,7 @@ DistributorPlan::getValidParameters() const
 
 #if defined(HAVE_TPETRA_CORE_MPI_ADVANCE)
 void DistributorPlan::initializeMpiAvance() {
+
 
   // assert the mpix communicator is null. if this is not the case we will figure out why
   TEUCHOS_ASSERT(mpixComm_.is_null());

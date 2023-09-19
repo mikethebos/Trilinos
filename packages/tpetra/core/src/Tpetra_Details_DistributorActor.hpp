@@ -106,7 +106,7 @@ private:
                const ExpView& exports,
                size_t numPackets,
                const ImpView& imports);
-               
+              
   template <class ExpView, class ImpView>
   void DistributorActor::doPostsAllToAll(const DistributorPlan& plan,
                                 const ExpView &exports,
@@ -269,6 +269,7 @@ void DistributorActor::doPostsAllToAll(const DistributorPlan& plan,
                               << Teuchos::mpiErrorCodeToString (err) << "\".");
     
     return;
+
   }
 #endif
 
@@ -584,6 +585,7 @@ void DistributorActor::doPosts(const DistributorPlan& plan,
   }
 }
 
+
 #ifdef HAVE_TPETRA_MPI
 template <class ExpView, class ImpView>
 void DistributorActor::doPostsAllToAll(const DistributorPlan& plan,
@@ -673,6 +675,7 @@ void DistributorActor::doPostsAllToAll(const DistributorPlan& plan,
                               << Teuchos::mpiErrorCodeToString (err) << "\".");
 }
 #endif
+
 
 template <class ExpView, class ImpView>
 void DistributorActor::doPosts(const DistributorPlan& plan,
@@ -818,6 +821,11 @@ void DistributorActor::doPosts(const DistributorPlan& plan,
       for (size_t j = 0; j < plan.getLengthsFrom()[i]; ++j) {
         totalPacketsFrom_i += numImportPacketsPerLID[curLIDoffset+j];
       }
+      // totalPacketsFrom_i is converted down to int, so make sure it can be represented
+      TEUCHOS_TEST_FOR_EXCEPTION(totalPacketsFrom_i > size_t(INT_MAX),
+                                 std::logic_error, "Tpetra::Distributor::doPosts(3 args, Kokkos): "
+                                 "Recv count for receive " << i << " (" << totalPacketsFrom_i << ") is too large "
+                                 "to be represented as int.");
       curLIDoffset += plan.getLengthsFrom()[i];
       if (plan.getProcsFrom()[i] != myProcID && totalPacketsFrom_i) {
         // If my process is receiving these packet(s) from another
@@ -856,6 +864,11 @@ void DistributorActor::doPosts(const DistributorPlan& plan,
       numPackets += numExportPacketsPerLID[j];
     }
     if (numPackets > maxNumPackets) maxNumPackets = numPackets;
+    // numPackets will be used as a message length, so make sure it can be represented as int
+    TEUCHOS_TEST_FOR_EXCEPTION(numPackets > size_t(INT_MAX),
+                               std::logic_error, "Tpetra::Distributor::doPosts(4 args, Kokkos): "
+                               "packetsPerSend[" << pp << "] = " << numPackets << " is too large "
+                               "to be represented as int.");
     packetsPerSend[pp] = numPackets;
     curPKToffset += numPackets;
   }
